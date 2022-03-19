@@ -1,5 +1,3 @@
-import numpy as np
-import math
 import functools
 
 import torch
@@ -7,11 +5,9 @@ import torch.nn as nn
 from torch.nn import init
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.nn import Parameter as P
 
 import src.models.big.layers as layers
-from src.models.big.sync_batchnorm import SynchronizedBatchNorm2d as SyncBatchNorm2d
-from src.models.parameter import colors_dim, labels_dim, parameter
+from src.models.parameter import labels_dim, parameter
 from src.models.neuralnetwork import NeuralNetwork
 
 

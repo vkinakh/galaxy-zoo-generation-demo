@@ -2,7 +2,7 @@ import streamlit as st
 
 # Custom imports
 from src.app import MultiPage
-from src.app import explore_infoscc_gan
+from src.app import explore_infoscc_gan, explore_biggan
 
 # Create an instance of the app
 app = MultiPage()
@@ -11,6 +11,7 @@ app = MultiPage()
 st.title('Galaxy Zoo generation')
 
 # Add all your applications (pages) here
+app.add_page('Explore BigGAN', explore_biggan.app)
 app.add_page('Explore InfoSCC-GAN', explore_infoscc_gan.app)
 
 # The main app

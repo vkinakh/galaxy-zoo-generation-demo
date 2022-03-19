@@ -7,3 +7,4 @@ size = 64   # generated image size
 shape_label = 37  # shape of the input label
 n_channels = 3  # number of color channels in image
 upsample = True   # if true, generated images will be upsampled
+path_labels = './data/training_solutions_rev1.csv'

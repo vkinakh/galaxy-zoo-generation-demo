@@ -2,15 +2,17 @@ from pathlib import Path
 import math
 
 import numpy as np
-from google_drive_downloader import GoogleDriveDownloader as gdd
 import streamlit as st
 
 import torch
 import torch.nn.functional as F
 
 import src.app.params as params
+from src.app.questions import q1, q1_options, q2, q2_options, q3, q3_options, q4, q4_options, q5, q5_options, \
+    q6, q6_options, q7, q7_options, q8, q8_options, q9, q9_options, q10, q10_options, q11, q11_options
 from src.models import ConditionalGenerator
 from src.data import get_labels_train, make_galaxy_labels_hierarchical
+from src.utils import download_model, sample_labels
 
 # global parameters
 device = params.device
@@ -26,57 +28,20 @@ bs = 16  # number of samples to generate
 n_cols = int(math.sqrt(bs))
 model_path = './models/InfoSCC-GAN/generator.pt'  # path to the model
 drive_id = '1_kIujc497OH0ZJ7PNPwS5_otNlS7jMLI'   # google drive id of the model
-path_labels = './data/training_solutions_rev1.csv'
+path_labels = params.path_labels
 
-# manual labels, question values
-q1 = 'Is the object a smooth galaxy, a galaxy with features/disk or a star?'
-q1_options = ['Smooth', 'Features or disk', 'Star or artifact']
+# manual labels
 q1_out = [0] * len(q1_options)
-
-q2 = 'Is it edge-on? '
-q2_options = ['Yes', 'No']
 q2_out = [0] * len(q2_options)
-
-q3 = 'Is there a bar?'
-q3_options = ['Yes', 'No']
 q3_out = [0] * len(q3_options)
-
-q4 = 'Is there a spiral pattern?'
-q4_options = ['Yes', 'No']
 q4_out = [0] * len(q4_options)
-
-q5 = 'How prominent is the central bulge?'
-q5_options = ['No bulge', 'Just noticeable', 'Obvious', 'Dominant']
 q5_out = [0] * len(q5_options)
-
-q6 = 'Is there anything "odd" about the galaxy?'
-q6_options = ['Yes', 'No']
 q6_out = [0] * len(q6_options)
-
-q7 = 'How round is the smooth galaxy?'
-q7_options = ['Completely round', 'In between', 'Cigar-shaped']
 q7_out = [0] * len(q7_options)
-
-q8 = 'What is the odd feature?'
-q8_options = ['Ring', 'Lens or are', 'Disturbed', 'Irregular', 'Other', 'Merger', 'Dust lane']
 q8_out = [0] * len(q8_options)
-
-q9 = 'What shape is the bulge in the edge-on galaxy?'
-q9_options = ['Rounded', 'Boxy', 'No bulge']
 q9_out = [0] * len(q9_options)
-
-q10 = 'How tightly wound are the spiral arms?'
-q10_options = ['Tight', 'Medium', 'Loose']
 q10_out = [0] * len(q10_options)
-
-q11 = 'How many spiral arms are there?'
-q11_options = ['1', '2', '3', '4', 'more than four', 'can`t tell']
 q11_out = [0] * len(q11_options)
-
-
-def download_model(file_id: str, output_path: str):
-    gdd.download_file_from_google_drive(file_id=file_id,
-                                        dest_path=output_path)
 
 
 def clear_out(elems=None):
@@ -120,26 +85,22 @@ def load_model(model_path: str) -> ConditionalGenerator:
     return g_ema
 
 
-@st.cache(allow_output_mutation=True)
 def get_eps(model: ConditionalGenerator, n: int) -> torch.Tensor:
     eps = model.sample_eps(n)
     return eps.to(device)
 
 
-def get_labels(n: int) -> torch.Tensor:
+@st.cache
+def get_labels() -> torch.Tensor:
     labels_train = get_labels_train(path_labels)
-    high = int(labels_train.shape[0])
-    idx = np.random.randint(0, high, size=n)
-    return labels_train[idx]
+    return labels_train
 
 
 def app():
     global q1_out, q2_out, q3_out, q4_out, q5_out, q6_out, q6_out, q7_out, q8_out, q9_out, q10_out, q11_out
 
     st.title('Explore InfoSCC-GAN')
-    st.markdown('This demo shows *Stochastic Contrastive Conditional Generative Adversarial Network* (InfoSCC-GAN) '
-                'for conditional galaxy generation')
-
+    st.markdown('This demo shows InfoSCC-GAN for conditional galaxy generation')
     st.subheader(r'<- Use sidebar to explore $z_1, ..., z_k$ latent variables')
 
     if not Path(model_path).exists():
@@ -147,6 +108,7 @@ def app():
 
     model = load_model(model_path)
     eps = get_eps(model, bs)
+    labels_train = get_labels()
 
     # get zs
     zs = np.array([[0.0] * n_basis] * n_layers, dtype=np.float32)
@@ -164,13 +126,13 @@ def app():
                 r' generated with tha same labels')
     label_type = st.radio('Label type', options=['Random', 'Manual (Advanced)'])
     if label_type == 'Random':
-        labels = get_labels(bs).to(device)
+        labels = sample_labels(labels_train, bs).to(device)
 
         st.markdown(r'Click on __Sample labels__ button to sample random input labels')
         change_label = st.button('Sample label')
 
         if change_label:
-            labels = get_labels(bs).to(device)
+            labels = sample_labels(labels_train, bs).to(device)
     elif label_type == 'Manual (Advanced)':
         st.markdown('Answer the questions below')
 
@@ -277,8 +239,8 @@ def app():
         labels = labels.unsqueeze(0).repeat(bs, 1)
         labels = make_galaxy_labels_hierarchical(labels)
         clear_out()
-
     # ========================== Labels ================================
+
     st.subheader('Noise')
     st.markdown(r'Click on __Change eps__ button to change input $\varepsilon$ latent space')
     change_eps = st.button('Change eps')
