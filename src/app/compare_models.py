@@ -1,5 +1,5 @@
-import math
 from pathlib import Path
+import math
 
 import streamlit as st
 import numpy as np
@@ -10,23 +10,18 @@ import torch.nn.functional as F
 import src.app.params as params
 from src.app.questions import q1, q1_options, q2, q2_options, q3, q3_options, q4, q4_options, q5, q5_options, \
     q6, q6_options, q7, q7_options, q8, q8_options, q9, q9_options, q10, q10_options, q11, q11_options
-from src.models import ConditionalDecoder
+from src.models import ConditionalGenerator as InfoSCC_GAN
+from src.models.big.BigGAN2 import Generator as BigGAN2Generator
+from src.models import ConditionalDecoder as cVAE
 from src.data import get_labels_train, make_galaxy_labels_hierarchical
 from src.utils import download_model, sample_labels
 
 
-# global parameters
 device = params.device
-size = params.size
-y_size = shape_label = params.shape_label
-n_channels = params.n_channels
-upsample = params.upsample
-dim_z = params.dim_z
-bs = 16  # number of samples to generate
+bs = 10  # number of images to generate each model
 n_cols = int(math.sqrt(bs))
-model_path = params.path_cvae
-drive_id = params.drive_id_cvae
-path_labels = params.path_labels
+size = params.size
+n_layers = int(math.log2(size) - 2)
 
 # manual labels
 q1_out = [0] * len(q1_options)
@@ -73,39 +68,69 @@ def clear_out(elems=None):
 
 
 @st.cache(allow_output_mutation=True)
-def load_model(model_path: str) -> ConditionalDecoder:
+def load_model(model_type: str):
 
-    print(f'Loading model: {model_path}')
-    g = ConditionalDecoder()
-    ckpt = torch.load(model_path, map_location=torch.device('cpu'))
-    g.load_state_dict(ckpt)
-    g.eval().to(device)
+    print(f'Loading model: {model_type}')
+    if model_type == 'InfoSCC-GAN':
+        g = InfoSCC_GAN(size=params.size,
+                        y_size=params.shape_label,
+                        z_size=params.noise_dim)
+
+        if not Path(params.path_infoscc_gan).exists():
+            download_model(params.drive_id_infoscc_gan, params.path_infoscc_gan)
+
+        ckpt = torch.load(params.path_infoscc_gan)
+        g.load_state_dict(ckpt['g_ema'])
+    elif model_type == 'BigGAN':
+        g = BigGAN2Generator()
+
+        if not Path(params.path_biggan).exists():
+            download_model(params.drive_id_biggan, params.path_biggan)
+
+        ckpt = torch.load(params.path_biggan)
+        g.load_state_dict(ckpt)
+    elif model_type == 'cVAE':
+        g = cVAE()
+
+        if not Path(params.path_cvae).exists():
+            download_model(params.drive_id_cvae, params.path_cvae)
+
+        ckpt = torch.load(params.path_cvae)
+        g.load_state_dict(ckpt)
+    else:
+        raise ValueError('Unsupported model')
+    g = g.eval().to(device=params.device)
     return g
-
-
-def get_eps(n: int) -> torch.Tensor:
-    eps = torch.randn((n, dim_z), device=device)
-    return eps
 
 
 @st.cache
 def get_labels() -> torch.Tensor:
-    labels_train = get_labels_train(path_labels)
+    labels_train = get_labels_train(params.path_labels)
     return labels_train
+
+
+def get_eps(n: int) -> torch.Tensor:
+    eps = torch.randn((n, params.dim_z), device=device)
+    return eps
 
 
 def app():
     global q1_out, q2_out, q3_out, q4_out, q5_out, q6_out, q6_out, q7_out, q8_out, q9_out, q10_out, q11_out
 
-    st.title('Explore cVAE')
-    st.markdown('This demo shows cVAE for conditional galaxy generation')
+    st.title('Compare models')
+    st.markdown('This demo allows to compare BigGAN, InfoSCC-GAN and cVAE models for conditional galaxy generation.')
+    st.markdown('In each there there are images generated with the same labels by each of the models')
 
-    if not Path(model_path).exists():
-        download_model(drive_id, model_path)
-
-    model = load_model(model_path)
-    eps = get_eps(bs)
+    biggan = load_model('BigGAN')
+    infoscc_gan = load_model('InfoSCC-GAN')
+    cvae = load_model('cVAE')
     labels_train = get_labels()
+
+    eps = get_eps(bs)  # for BigGAN and cVAE
+    eps_infoscc = infoscc_gan.sample_eps(bs)
+
+    zs = np.array([[0.0] * params.n_basis] * n_layers, dtype=np.float32)
+    zs_torch = torch.from_numpy(zs).unsqueeze(0).repeat(bs, 1, 1).to(device)
 
     # ========================== Labels ================================
     st.subheader('Label')
@@ -233,20 +258,30 @@ def app():
     st.markdown(r'Click on __Change eps__ button to change input $\varepsilon$ latent space')
     change_eps = st.button('Change eps')
     if change_eps:
-        eps = get_eps(bs)
+        eps = get_eps(bs)  # for BigGAN and cVAE
+        eps_infoscc = infoscc_gan.sample_eps(bs)
 
     with torch.no_grad():
-        imgs = model(eps, labels)
+        imgs_biggan = biggan(eps, labels).squeeze(0).cpu()
+        imgs_infoscc = infoscc_gan(labels, eps_infoscc, zs_torch).squeeze(0).cpu()
+        imgs_cvae = cvae(eps, labels).squeeze(0).cpu()
 
-    if upsample:
-        imgs = F.interpolate(imgs, (size * 4, size * 4), mode='bicubic')
+    if params.upsample:
+        imgs_biggan = F.interpolate(imgs_biggan, (size * 4, size * 4), mode='bicubic')
+        imgs_infoscc = F.interpolate(imgs_infoscc, (size * 4, size * 4), mode='bicubic')
+        imgs_cvae = F.interpolate(imgs_cvae, (size * 4, size * 4), mode='bicubic')
 
-    imgs = [(imgs[i].permute(1, 2, 0).numpy() * 127.5 + 127.5).astype(np.uint8) for i in range(bs)]
+    imgs_biggan = torch.clip(imgs_biggan, 0, 1)
+    imgs_biggan = [(imgs_biggan[i].permute(1, 2, 0).numpy() * 255).astype(np.uint8) for i in range(bs)]
+    imgs_infoscc = [(imgs_infoscc[i].permute(1, 2, 0).numpy() * 127.5 + 127.5).astype(np.uint8) for i in range(bs)]
+    imgs_cvae = [(imgs_cvae[i].permute(1, 2, 0).numpy() * 127.5 + 127.5).astype(np.uint8) for i in range(bs)]
 
-    counter = 0
-    for r in range(bs // n_cols):
-        cols = st.columns(n_cols)
+    c1, c2, c3 = st.columns(3)
+    c1.header('BigGAN')
+    c1.image(imgs_biggan, use_column_width=True)
 
-        for c in range(n_cols):
-            cols[c].image(imgs[counter])
-            counter += 1
+    c2.header('InfoSCC-GAN')
+    c2.image(imgs_infoscc, use_column_width=True)
+
+    c3.header('cVAE')
+    c3.image(imgs_cvae, use_column_width=True)

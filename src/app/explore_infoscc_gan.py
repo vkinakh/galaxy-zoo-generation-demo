@@ -17,17 +17,17 @@ from src.utils import download_model, sample_labels
 # global parameters
 device = params.device
 size = params.size
-y_size = shape_label = params.shape_label
+y_size = params.shape_label
 n_channels = params.n_channels
 upsample = params.upsample
-z_size = noise_dim = 512
+z_size = noise_dim = params.noise_dim
 n_layers = int(math.log2(size) - 2)
-n_basis = 6
-y_type = 'real'
+n_basis = params.n_basis
+y_type = params.y_type
 bs = 16  # number of samples to generate
 n_cols = int(math.sqrt(bs))
-model_path = './models/InfoSCC-GAN/generator.pt'  # path to the model
-drive_id = '1_kIujc497OH0ZJ7PNPwS5_otNlS7jMLI'   # google drive id of the model
+model_path = params.path_infoscc_gan  # path to the model
+drive_id = params.drive_id_infoscc_gan   # google drive id of the model
 path_labels = params.path_labels
 
 # manual labels
@@ -85,11 +85,6 @@ def load_model(model_path: str) -> ConditionalGenerator:
     return g_ema
 
 
-def get_eps(model: ConditionalGenerator, n: int) -> torch.Tensor:
-    eps = model.sample_eps(n)
-    return eps.to(device)
-
-
 @st.cache
 def get_labels() -> torch.Tensor:
     labels_train = get_labels_train(path_labels)
@@ -107,7 +102,7 @@ def app():
         download_model(drive_id, model_path)
 
     model = load_model(model_path)
-    eps = get_eps(model, bs)
+    eps = model.sample_eps(bs).to(device)
     labels_train = get_labels()
 
     # get zs

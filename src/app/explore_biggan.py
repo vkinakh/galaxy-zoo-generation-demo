@@ -21,11 +21,11 @@ size = params.size
 y_size = shape_label = params.shape_label
 n_channels = params.n_channels
 upsample = params.upsample
-dim_z = 128
+dim_z = params.dim_z
 bs = 16  # number of samples to generate
 n_cols = int(math.sqrt(bs))
-model_path = './models/BigGAN/generator.pth'
-drive_id = ''
+model_path = params.path_biggan
+drive_id = params.drive_id_biggan
 path_labels = params.path_labels
 
 # manual labels
@@ -241,6 +241,7 @@ def app():
     if upsample:
         imgs = F.interpolate(imgs, (size * 4, size * 4), mode='bicubic')
 
+    imgs = torch.clip(imgs, 0, 1)
     imgs = [(imgs[i].permute(1, 2, 0).numpy() * 255).astype(np.uint8) for i in range(bs)]
 
     counter = 0

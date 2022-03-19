@@ -5,7 +5,7 @@
 .idea/
 models/InfoSCC-GAN/
 models/BigGAN/
-
+models/CVAE
 
 ### Images ###
 # JPEG
