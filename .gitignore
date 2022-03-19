@@ -3,7 +3,8 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,pycharm,jupyternotebooks,images
 
 .idea/
-models/
+models/InfoSCC-GAN/
+models/BigGAN
 
 
 ### Images ###
