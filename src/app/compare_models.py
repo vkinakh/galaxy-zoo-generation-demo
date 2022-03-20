@@ -79,7 +79,7 @@ def load_model(model_type: str):
         if not Path(params.path_infoscc_gan).exists():
             download_model(params.drive_id_infoscc_gan, params.path_infoscc_gan)
 
-        ckpt = torch.load(params.path_infoscc_gan)
+        ckpt = torch.load(params.path_infoscc_gan, map_location=torch.device('cpu'))
         g.load_state_dict(ckpt['g_ema'])
     elif model_type == 'BigGAN':
         g = BigGAN2Generator()
@@ -87,7 +87,7 @@ def load_model(model_type: str):
         if not Path(params.path_biggan).exists():
             download_model(params.drive_id_biggan, params.path_biggan)
 
-        ckpt = torch.load(params.path_biggan)
+        ckpt = torch.load(params.path_biggan, map_location=torch.device('cpu'))
         g.load_state_dict(ckpt)
     elif model_type == 'cVAE':
         g = cVAE()
@@ -95,7 +95,7 @@ def load_model(model_type: str):
         if not Path(params.path_cvae).exists():
             download_model(params.drive_id_cvae, params.path_cvae)
 
-        ckpt = torch.load(params.path_cvae)
+        ckpt = torch.load(params.path_cvae, map_location=torch.device('cpu'))
         g.load_state_dict(ckpt)
     else:
         raise ValueError('Unsupported model')
