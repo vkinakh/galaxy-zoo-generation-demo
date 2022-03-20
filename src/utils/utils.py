@@ -1,12 +1,11 @@
 import numpy as np
-from google_drive_downloader import GoogleDriveDownloader as gdd
+import gdown
 
 import torch
 
 
 def download_model(file_id: str, output_path: str):
-    gdd.download_file_from_google_drive(file_id=file_id,
-                                        dest_path=output_path)
+    gdown.download(f'https://drive.google.com/uc?id={file_id}', output_path)
 
 
 def sample_labels(labels: torch.Tensor, n: int) -> torch.Tensor:

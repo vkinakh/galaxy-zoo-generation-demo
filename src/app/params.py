@@ -17,7 +17,7 @@ path_infoscc_gan = './models/InfoSCC-GAN/generator.pt'
 drive_id_infoscc_gan = '1_kIujc497OH0ZJ7PNPwS5_otNlS7jMLI'
 
 path_biggan = './models/BigGAN/generator.pth'
-drive_id_biggan = ''
+drive_id_biggan = '1sMSDdnQ5GjHcno5knHTDSKAKhhoHh_4z'
 
 path_cvae = './models/CVAE/generator.pth'
-drive_id_cvae = ''
+drive_id_cvae = '17FmLvhwXq8PQMrD1CtjqyoAy5BobYMTE'
