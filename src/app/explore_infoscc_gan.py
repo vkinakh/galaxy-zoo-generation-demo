@@ -12,7 +12,7 @@ from src.app.questions import q1, q1_options, q2, q2_options, q3, q3_options, q4
     q6, q6_options, q7, q7_options, q8, q8_options, q9, q9_options, q10, q10_options, q11, q11_options
 from src.models import ConditionalGenerator
 from src.data import get_labels_train, make_galaxy_labels_hierarchical
-from src.utils import download_model, sample_labels
+from src.utils import download_file, sample_labels
 
 # global parameters
 device = params.device
@@ -87,6 +87,8 @@ def load_model(model_path: str) -> ConditionalGenerator:
 
 @st.cache
 def get_labels() -> torch.Tensor:
+    if not Path(path_labels).exists():
+        download_file(params.drive_id_labels, path_labels)
     labels_train = get_labels_train(path_labels)
     return labels_train
 
@@ -99,7 +101,7 @@ def app():
     st.subheader(r'<- Use sidebar to explore $z_1, ..., z_k$ latent variables')
 
     if not Path(model_path).exists():
-        download_model(drive_id, model_path)
+        download_file(drive_id, model_path)
 
     model = load_model(model_path)
     eps = model.sample_eps(bs).to(device)

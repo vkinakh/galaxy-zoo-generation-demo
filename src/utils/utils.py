@@ -4,7 +4,7 @@ import gdown
 import torch
 
 
-def download_model(file_id: str, output_path: str):
+def download_file(file_id: str, output_path: str):
     gdown.download(f'https://drive.google.com/uc?id={file_id}', output_path)
 
 

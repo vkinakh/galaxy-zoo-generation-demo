@@ -14,7 +14,7 @@ from src.models import ConditionalGenerator as InfoSCC_GAN
 from src.models.big.BigGAN2 import Generator as BigGAN2Generator
 from src.models import ConditionalDecoder as cVAE
 from src.data import get_labels_train, make_galaxy_labels_hierarchical
-from src.utils import download_model, sample_labels
+from src.utils import download_file, sample_labels
 
 
 device = params.device
@@ -77,7 +77,7 @@ def load_model(model_type: str):
                         z_size=params.noise_dim)
 
         if not Path(params.path_infoscc_gan).exists():
-            download_model(params.drive_id_infoscc_gan, params.path_infoscc_gan)
+            download_file(params.drive_id_infoscc_gan, params.path_infoscc_gan)
 
         ckpt = torch.load(params.path_infoscc_gan, map_location=torch.device('cpu'))
         g.load_state_dict(ckpt['g_ema'])
@@ -85,7 +85,7 @@ def load_model(model_type: str):
         g = BigGAN2Generator()
 
         if not Path(params.path_biggan).exists():
-            download_model(params.drive_id_biggan, params.path_biggan)
+            download_file(params.drive_id_biggan, params.path_biggan)
 
         ckpt = torch.load(params.path_biggan, map_location=torch.device('cpu'))
         g.load_state_dict(ckpt)
@@ -93,7 +93,7 @@ def load_model(model_type: str):
         g = cVAE()
 
         if not Path(params.path_cvae).exists():
-            download_model(params.drive_id_cvae, params.path_cvae)
+            download_file(params.drive_id_cvae, params.path_cvae)
 
         ckpt = torch.load(params.path_cvae, map_location=torch.device('cpu'))
         g.load_state_dict(ckpt)
@@ -105,7 +105,12 @@ def load_model(model_type: str):
 
 @st.cache
 def get_labels() -> torch.Tensor:
-    labels_train = get_labels_train(params.path_labels)
+    path_labels = params.path_labels
+
+    if not Path(path_labels).exists():
+        download_file(params.drive_id_labels, path_labels)
+
+    labels_train = get_labels_train(path_labels)
     return labels_train
 
 

@@ -6,6 +6,8 @@
 models/InfoSCC-GAN/
 models/BigGAN/
 models/CVAE
+*.csv
+
 
 ### Images ###
 # JPEG

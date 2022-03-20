@@ -7,7 +7,6 @@ size = 64   # generated image size
 shape_label = 37  # shape of the input label
 n_channels = 3  # number of color channels in image
 upsample = True   # if true, generated images will be upsampled
-path_labels = './data/training_solutions_rev1.csv'
 noise_dim = 512  # noise size in InfoSCC-GAN
 n_basis = 6   # size of additional z vectors in InfoSCC-GAN
 y_type = 'real'  # type of labels in InfoSCC-GAN
@@ -21,3 +20,6 @@ drive_id_biggan = '1sMSDdnQ5GjHcno5knHTDSKAKhhoHh_4z'
 
 path_cvae = './models/CVAE/generator.pth'
 drive_id_cvae = '17FmLvhwXq8PQMrD1CtjqyoAy5BobYMTE'
+
+path_labels = './data/training_solutions_rev1.csv'
+drive_id_labels = '1dzsB_HdGtmSHE4pCppamISpFaJBfPF7E'
