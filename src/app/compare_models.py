@@ -124,7 +124,7 @@ def app():
 
     st.title('Compare models')
     st.markdown('This demo allows to compare BigGAN, InfoSCC-GAN and cVAE models for conditional galaxy generation.')
-    st.markdown('In each there there are images generated with the same labels by each of the models')
+    st.markdown('In each row there are images generated with the same labels by each of the models')
 
     biggan = load_model('BigGAN')
     infoscc_gan = load_model('InfoSCC-GAN')
