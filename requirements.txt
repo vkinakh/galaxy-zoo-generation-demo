@@ -1,5 +1,5 @@
 -f https://download.pytorch.org/whl/torch_stable.html
-gdown
+gdown==4.6.0
 googledrivedownloader==0.4
 pandas==1.4.1
 streamlit==1.7.0
